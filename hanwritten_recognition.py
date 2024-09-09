@@ -6,28 +6,28 @@ from tensorflow.keras.preprocessing.image import ImageDataGenerator
 import matplotlib.pyplot as plt
 from PIL import Image
 
-# Load MNIST dataset and split into training and testing sets
+# Load the MNIST dataset and split it into training and testing sets for model evaluation
 print("Loading MNIST dataset...")
 (x_train, y_train), (x_test, y_test) = tf.keras.datasets.mnist.load_data()
 
-# Preprocess the data - normalize pixel values between 0 and 1
+# Normalize the pixel values to a range between 0 and 1 to improve model training performance
 print("Preprocessing the data...")
 x_train = x_train / 255.0
 x_test = x_test / 255.0
 
-# Adding a console to reflect runtime issues
-print("Code execution reached this point.")
+# Print a checkpoint message to track code execution and ensure it reaches this point without issues
+print("Data preprocessing completed successfully.")
 
-# Reshape images to match CNN input shape (add channel dimension)
+# Reshape the images to include a channel dimension (necessary for CNN input with grayscale images)
 x_train = x_train.reshape(-1, 28, 28, 1)
 x_test = x_test.reshape(-1, 28, 28, 1)
 
-# Data Augmentation
+# Apply data augmentation to the training data (rotation, zoom, and shifts) to improve generalization
 datagen = ImageDataGenerator(rotation_range=10, zoom_range=0.1, width_shift_range=0.1, height_shift_range=0.1)
 datagen.fit(x_train)
 
-# Adding a console to reflect successful execution
-print("Code executed successfully.")
+# Print a message to confirm successful execution of the above steps
+print("Data augmentation setup completed.")
 
 # Define the CNN architecture with ReLU activation and L2 regularization
 model = tf.keras.Sequential([
@@ -57,56 +57,64 @@ history = model.fit(datagen.flow(x_train, y_train, batch_size=64),
                     epochs=5,
                     validation_data=(x_test, y_test))
 
-# Adding a console to reflect successful execution
-print("Code executed successfully.")
+print("Model training completed successfully.")
 
 # Function to recognize a handwritten digit from an image file
 def recognize_digit(image_path):
-    # Load and preprocess the image
+    # Load the image in grayscale mode
     img = cv2.imread(image_path, cv2.IMREAD_GRAYSCALE)
+
+    # Resize the image to match the input shape expected by the model (28x28 pixels)
     img = cv2.resize(img, (28, 28))
+
+    # Normalize the pixel values to the range [0, 1] for better prediction accuracy
     img = img / 255.0
+
+    # Expand dimensions to match the model input (batch_size, height, width, channels)
     img = np.expand_dims(img, axis=0)
 
-    # Predict the digit using the trained model
+    # Use the trained model to predict the digit in the image
     prediction = model.predict(img)
+
+    # Get the digit with the highest predicted probability
     digit = np.argmax(prediction)
+
+    # Print the recognized digit
+    print(f"Recognized digit: {digit}")
 
     return digit
 
-# Adding a console to reflect successful execution
-print("Code executed successfully.")
+# Indicate that the function has successfully recognized the digit
+print("Digit recognition process completed successfully.")
+
 
 # Path to the folder where user-placed images are stored
 user_images_folder = "user_images/"
 
-# Loop to continuously recognize digits from user images
-while True:
-    user_input = input("Enter 'q' to quit or press Enter to recognize a digit: ")
+# List image files in the user_images_folder
+image_files = [f for f in os.listdir(user_images_folder) if os.path.isfile(os.path.join(user_images_folder, f))]
 
-    if user_input.lower() == 'q':
-        break
+# Check if there are any images in the folder
+if not image_files:
+    print("No images found in the folder. Please place an image in the user_images folder.")
+else:
+    # Loop through all image files and recognize digits
+    for image_to_recognize in image_files:
+        image_path = os.path.join(user_images_folder, image_to_recognize)
 
-    # List image files in the user_images_folder
-    image_files = [f for f in os.listdir(user_images_folder) if os.path.isfile(os.path.join(user_images_folder, f))]
+        # Recognize the digit from the chosen image
+        recognized_digit = recognize_digit(image_path)
 
-    if not image_files:
-        print("No images found in the folder. Please place an image in the user_images folder.")
-        continue
+        # Load and display the image with the recognized digit
+        img = Image.open(image_path)
+        plt.imshow(img, cmap='gray')
+        plt.axis('off')
+        plt.title(f"Recognized digit: {recognized_digit}")
+        plt.show()
 
-    # Choose the first image for recognition (you can modify this part to choose specific files)
-    image_to_recognize = image_files[0]
-    image_path = os.path.join(user_images_folder, image_to_recognize)
+        # Inform the user about the recognized digit
+        print(f"The recognized digit from the image '{image_to_recognize}' is: {recognized_digit}")
 
-    # Recognize the digit from the chosen image
-    recognized_digit = recognize_digit(image_path)
-
-    # Load and display the image
-    img = Image.open(image_path)
-    plt.imshow(img, cmap='gray')
-    plt.axis('off')
-    plt.title(f"Recognized digit: {recognized_digit}")
-    plt.show()
 
 # Plot performance metrics
 plt.figure(figsize=(12, 4))
